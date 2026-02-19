@@ -46,33 +46,44 @@ export default function BookAppointmentPage() {
   }, [user, loading, router]);
 
   const fetchDoctors = async () => {
-    const { data: users } = await supabase
+    const { data: users, error: usersError } = await supabase
       .from("users")
       .select("user_id, name, email")
       .eq("role", "doctor");
 
-    if (!users || users.length === 0) { setDoctors([]); return; }
+    if (usersError) {
+      console.error("Error fetching doctors:", usersError);
+      toast.error("Failed to load doctors");
+      setDoctors([]);
+      return;
+    }
 
+    if (!users || users.length === 0) {
+      setDoctors([]);
+      return;
+    }
+
+    // Get ALL staff entries (not just available ones) to show specialization
     const { data: staffData } = await supabase
       .from("staff")
-      .select("doctor_id, specialization, is_available")
-      .eq("is_available", true);
+      .select("doctor_id, specialization, is_available");
 
     const staffMap = new Map((staffData || []).map(s => [s.doctor_id, s]));
 
-    const enriched: Doctor[] = users
-      .filter(u => staffMap.has(u.user_id))
-      .map(u => ({
-        ...u,
-        specialization: staffMap.get(u.user_id)?.specialization || "General Medicine",
-      }));
-
-    const unmatched = users.filter(u => !staffMap.has(u.user_id)).map(u => ({
+    // Show ALL doctors, with their specialization if they have a staff entry
+    const allDoctors: Doctor[] = users.map(u => ({
       ...u,
-      specialization: "General Medicine",
+      specialization: staffMap.get(u.user_id)?.specialization || "General Medicine",
     }));
 
-    setDoctors([...enriched, ...unmatched]);
+    // Sort: available doctors first, then unavailable
+    allDoctors.sort((a, b) => {
+      const aAvailable = staffMap.get(a.user_id)?.is_available ?? false;
+      const bAvailable = staffMap.get(b.user_id)?.is_available ?? false;
+      return bAvailable ? 1 : aAvailable ? -1 : 0;
+    });
+
+    setDoctors(allDoctors);
   };
 
   const runAIAnalysis = async () => {
@@ -120,7 +131,7 @@ export default function BookAppointmentPage() {
     const { count } = await supabase.from("appointments").select("*", { count: "exact", head: true });
     const tokenNumber = (count || 0) + 1;
 
-    const { error } = await supabase.from("appointments").insert({
+    const appointmentData = {
       patient_id: user!.user_id,
       doctor_id: doctorId,
       symptoms,
@@ -134,11 +145,32 @@ export default function BookAppointmentPage() {
       token_number: tokenNumber,
       queue_position: queueCount + 1,
       status: "waiting",
-    });
-
-    if (error) { setSubmitting(false); toast.error("Booking failed: " + error.message); return; }
+    };
 
     const selectedDoctor = doctors.find(d => d.user_id === doctorId);
+
+    console.log("[Booking] Creating appointment:", {
+      patient_id: appointmentData.patient_id,
+      doctor_id: appointmentData.doctor_id,
+      selectedDoctor: selectedDoctor?.name,
+      selectedDoctorEmail: selectedDoctor?.email,
+    });
+
+    const { data: insertedAppt, error } = await supabase
+      .from("appointments")
+      .insert(appointmentData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[Booking] Error creating appointment:", error);
+      setSubmitting(false);
+      toast.error("Booking failed: " + error.message);
+      return;
+    }
+
+    console.log("[Booking] Appointment created successfully:", insertedAppt);
+
     if (selectedDoctor) {
       try {
         await fetch("/api/notify-doctor", {
