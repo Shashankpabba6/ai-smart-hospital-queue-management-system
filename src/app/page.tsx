@@ -70,23 +70,23 @@ export default function HomePage() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/auth/register">
             <Button size="lg" className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white border-0 text-lg px-8 gap-2">
-              Start Free <ChevronRight className="w-5 h-5" />
+              Get Started <ChevronRight className="w-5 h-5" />
             </Button>
           </Link>
           <Link href="/auth/login">
             <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 hover:text-white text-lg px-8">
-              Demo Login
+              Sign In
             </Button>
           </Link>
         </div>
 
-        {/* Stats */}
+        {/* Capabilities */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20">
           {[
-            { label: "Patients Served", value: "50,000+", icon: Users },
-            { label: "Avg Wait Reduction", value: "42%", icon: Clock },
-            { label: "Accuracy Rate", value: "94.7%", icon: Brain },
-            { label: "Beds Tracked", value: "Real-time", icon: BedDouble },
+            { label: "AI Triage", value: "5-Level Scoring", icon: Brain },
+            { label: "Queue Updates", value: "Real-time", icon: Clock },
+            { label: "Staff Monitoring", value: "Fatigue Index", icon: Activity },
+            { label: "Resource Tracking", value: "Live Status", icon: BedDouble },
           ].map((stat) => (
             <div key={stat.label} className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center">
               <stat.icon className="w-8 h-8 text-cyan-400 mx-auto mb-3" />
@@ -170,31 +170,6 @@ export default function HomePage() {
                 </div>
                 <h4 className="font-semibold text-white mb-2">{feat.title}</h4>
                 <p className="text-sm text-blue-300">{feat.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Demo Credentials */}
-      <section className="max-w-7xl mx-auto px-6 py-10 pb-20">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <Shield className="w-6 h-6 text-cyan-400" />
-            <h3 className="text-xl font-bold">Demo Credentials</h3>
-          </div>
-          <div className="grid md:grid-cols-3 gap-4">
-            {[
-              { role: "Patient", email: "patient@hospital.com", password: "demo_hash" },
-              { role: "Doctor", email: "doctor@hospital.com", password: "demo_hash" },
-              { role: "Admin", email: "admin@hospital.com", password: "demo_hash" },
-            ].map((cred) => (
-              <div key={cred.role} className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <Badge className="mb-3 bg-cyan-500/20 text-cyan-300 border-cyan-500/30">{cred.role}</Badge>
-                <div className="text-sm text-blue-200 space-y-1">
-                  <div><span className="text-white/60">Email:</span> {cred.email}</div>
-                  <div><span className="text-white/60">Password:</span> {cred.password}</div>
-                </div>
               </div>
             ))}
           </div>
