@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { Navbar } from "@/components/shared/Navbar";
 import { predictSeverity, predictWaitingTime, getSeverityBadge } from "@/lib/ai";
 import { toast } from "sonner";
-import { Brain, Clock, Stethoscope, Thermometer, Heart, Wind, User, FileText, ChevronRight, Info } from "lucide-react";
+import { Brain, Clock, Stethoscope, Thermometer, Heart, Wind, User, FileText, ChevronRight, Info, Mail } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,11 +46,44 @@ export default function BookAppointmentPage() {
   }, [user, loading, router]);
 
   const fetchDoctors = async () => {
-    const { data } = await supabase
+    const { data: users, error: usersError } = await supabase
       .from("users")
       .select("user_id, name, email")
       .eq("role", "doctor");
-    setDoctors(data || []);
+
+    if (usersError) {
+      console.error("Error fetching doctors:", usersError);
+      toast.error("Failed to load doctors");
+      setDoctors([]);
+      return;
+    }
+
+    if (!users || users.length === 0) {
+      setDoctors([]);
+      return;
+    }
+
+    // Get ALL staff entries (not just available ones) to show specialization
+    const { data: staffData } = await supabase
+      .from("staff")
+      .select("doctor_id, specialization, is_available");
+
+    const staffMap = new Map((staffData || []).map(s => [s.doctor_id, s]));
+
+    // Show ALL doctors, with their specialization if they have a staff entry
+    const allDoctors: Doctor[] = users.map(u => ({
+      ...u,
+      specialization: staffMap.get(u.user_id)?.specialization || "General Medicine",
+    }));
+
+    // Sort: available doctors first, then unavailable
+    allDoctors.sort((a, b) => {
+      const aAvailable = staffMap.get(a.user_id)?.is_available ?? false;
+      const bAvailable = staffMap.get(b.user_id)?.is_available ?? false;
+      return bAvailable ? 1 : aAvailable ? -1 : 0;
+    });
+
+    setDoctors(allDoctors);
   };
 
   const runAIAnalysis = async () => {
@@ -95,11 +128,10 @@ export default function BookAppointmentPage() {
     if (!doctorId) { toast.error("Please select a doctor"); return; }
     setSubmitting(true);
 
-    // Get next token number
     const { count } = await supabase.from("appointments").select("*", { count: "exact", head: true });
     const tokenNumber = (count || 0) + 1;
 
-    const { error } = await supabase.from("appointments").insert({
+    const appointmentData = {
       patient_id: user!.user_id,
       doctor_id: doctorId,
       symptoms,
@@ -113,11 +145,62 @@ export default function BookAppointmentPage() {
       token_number: tokenNumber,
       queue_position: queueCount + 1,
       status: "waiting",
+    };
+
+    const selectedDoctor = doctors.find(d => d.user_id === doctorId);
+
+    console.log("[Booking] Creating appointment:", {
+      patient_id: appointmentData.patient_id,
+      doctor_id: appointmentData.doctor_id,
+      selectedDoctor: selectedDoctor?.name,
+      selectedDoctorEmail: selectedDoctor?.email,
     });
 
+    const { data: insertedAppt, error } = await supabase
+      .from("appointments")
+      .insert(appointmentData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("[Booking] Error creating appointment:", error);
+      setSubmitting(false);
+      toast.error("Booking failed: " + error.message);
+      return;
+    }
+
+    console.log("[Booking] Appointment created successfully:", insertedAppt);
+
+    if (selectedDoctor) {
+      try {
+        await fetch("/api/notify-doctor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            doctorEmail: selectedDoctor.email,
+            doctorName: selectedDoctor.name,
+            patientName: user!.name,
+            patientEmail: user!.email,
+            symptoms,
+            severityScore: severityResult?.score || 1,
+            tokenNumber,
+            predictedWaitTime: waitTime,
+            fever: parseFloat(fever) || null,
+            bloodPressureSystolic: parseInt(bpSys) || null,
+            bloodPressureDiastolic: parseInt(bpDia) || null,
+            spo2: parseFloat(spo2) || null,
+            age: parseInt(age) || null,
+          }),
+        });
+        toast.success(`Appointment booked! Token #${tokenNumber}. Dr. ${selectedDoctor.name} has been notified.`);
+      } catch {
+        toast.success(`Appointment booked! Token #${tokenNumber}`);
+      }
+    } else {
+      toast.success(`Appointment booked! Token #${tokenNumber}`);
+    }
+
     setSubmitting(false);
-    if (error) { toast.error("Booking failed: " + error.message); return; }
-    toast.success(`Appointment booked! Token #${tokenNumber}`);
     router.push("/patient/queue");
   };
 
@@ -158,12 +241,17 @@ export default function BookAppointmentPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {doctors.length === 0 && <p className="text-blue-300 text-sm">No doctors available.</p>}
+              {doctors.length === 0 && <p className="text-blue-300 text-sm">No doctors available at the moment. Please try again later.</p>}
               {doctors.map(doc => (
                 <button key={doc.user_id} onClick={() => setDoctorId(doc.user_id)}
                   className={`w-full p-4 rounded-xl border text-left transition-all ${doctorId === doc.user_id ? "border-cyan-400 bg-cyan-500/10" : "border-white/10 bg-white/5 hover:border-white/20"}`}>
-                  <div className="font-semibold text-white">{doc.name}</div>
-                  <div className="text-sm text-blue-300">{doc.email}</div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-white">{doc.name}</span>
+                    <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 text-xs">{doc.specialization}</Badge>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm text-blue-300">
+                    <Mail className="w-3 h-3" /> {doc.email}
+                  </div>
                 </button>
               ))}
               <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-0 mt-4"

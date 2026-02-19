@@ -20,6 +20,7 @@ const NAV_LINKS: Record<string, NavLink[]> = {
   ],
   admin: [
     { href: "/admin/dashboard", label: "Dashboard" },
+    { href: "/admin/doctors", label: "All Doctors" },
   ],
 };
 

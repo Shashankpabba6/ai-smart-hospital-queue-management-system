@@ -7,24 +7,27 @@ import { Navbar } from "@/components/shared/Navbar";
 import { getSeverityBadge, calculateFatigue, predictNoShow } from "@/lib/ai";
 import { toast } from "sonner";
 import {
-  Users, Clock, CheckCircle, Activity, RefreshCw, Stethoscope, AlertTriangle, Brain, Zap, Info
+  Users, Clock, CheckCircle, Activity, RefreshCw, Stethoscope, AlertTriangle, Zap, Mail
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
+type AppointmentWithPatient = Appointment & { patient?: { name?: string; email?: string } | null };
+
 export default function DoctorDashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [queue, setQueue] = useState<Appointment[]>([]);
+  const [queue, setQueue] = useState<AppointmentWithPatient[]>([]);
   const [staffInfo, setStaffInfo] = useState<Staff | null>(null);
   const [fetching, setFetching] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
   const fetchData = useCallback(async () => {
     if (!user) return;
-    const { data: appts } = await supabase
+
+    const { data: appts, error: apptError } = await supabase
       .from("appointments")
       .select("*, patient:patient_id(name, email)")
       .eq("doctor_id", user.user_id)
@@ -32,13 +35,57 @@ export default function DoctorDashboard() {
       .order("severity_score", { ascending: false })
       .order("queue_position", { ascending: true });
 
+    let enrichedAppts = (appts as AppointmentWithPatient[]) || [];
+
+    if (apptError) {
+      console.error("Failed to fetch appointments with join, trying without join:", apptError);
+      const { data: rawAppts } = await supabase
+        .from("appointments")
+        .select("*")
+        .eq("doctor_id", user.user_id)
+        .in("status", ["waiting", "in_consultation"])
+        .order("severity_score", { ascending: false })
+        .order("queue_position", { ascending: true });
+
+      if (rawAppts && rawAppts.length > 0) {
+        const patientIds = [...new Set(rawAppts.map(a => a.patient_id))];
+        const { data: patients } = await supabase
+          .from("users")
+          .select("user_id, name, email")
+          .in("user_id", patientIds);
+
+        const patientMap = new Map((patients || []).map(p => [p.user_id, { name: p.name, email: p.email }]));
+        enrichedAppts = rawAppts.map(a => ({
+          ...a,
+          patient: patientMap.get(a.patient_id) || null,
+        })) as AppointmentWithPatient[];
+      }
+    }
+
+    const hasPatientNames = enrichedAppts.some(a => a.patient?.name);
+    if (!hasPatientNames && enrichedAppts.length > 0) {
+      const patientIds = [...new Set(enrichedAppts.map(a => a.patient_id))];
+      const { data: patients } = await supabase
+        .from("users")
+        .select("user_id, name, email")
+        .in("user_id", patientIds);
+
+      if (patients && patients.length > 0) {
+        const patientMap = new Map(patients.map(p => [p.user_id, { name: p.name, email: p.email }]));
+        enrichedAppts = enrichedAppts.map(a => ({
+          ...a,
+          patient: patientMap.get(a.patient_id) || a.patient,
+        })) as AppointmentWithPatient[];
+      }
+    }
+
     const { data: staff } = await supabase
       .from("staff")
       .select("*")
       .eq("doctor_id", user.user_id)
       .single();
 
-    setQueue((appts as Appointment[]) || []);
+    setQueue(enrichedAppts);
     setStaffInfo(staff as Staff);
     setLastUpdated(new Date());
     setFetching(false);
@@ -178,7 +225,9 @@ export default function DoctorDashboard() {
                   predicted_wait_time: appt.predicted_wait_time || 30,
                   severity_score: appt.severity_score,
                 });
-                const patientName = (appt.patient as { name?: string })?.name || "Patient";
+                const patientData = appt.patient as { name?: string; email?: string } | null;
+                const patientName = patientData?.name || "Patient";
+                const patientEmail = patientData?.email || "";
                 const isActive = appt.status === "in_consultation";
 
                 return (
@@ -214,6 +263,11 @@ export default function DoctorDashboard() {
                               </Badge>
                             )}
                           </div>
+                          {patientEmail && (
+                            <p className="text-xs text-blue-400 mb-1 flex items-center gap-1">
+                              <Mail className="w-3 h-3" /> {patientEmail}
+                            </p>
+                          )}
                           <p className="text-sm text-blue-200 mb-1">{appt.symptoms || "No symptoms recorded"}</p>
                           <div className="flex gap-4 text-xs text-blue-300 flex-wrap">
                             {appt.fever && <span>Fever: {appt.fever}°C</span>}

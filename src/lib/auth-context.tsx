@@ -2,11 +2,16 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase, User } from "@/lib/supabase";
 
+interface DoctorOptions {
+  specialization?: string;
+  shiftHours?: number;
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error?: string }>;
-  register: (name: string, email: string, password: string, role: string) => Promise<{ error?: string }>;
+  register: (name: string, email: string, password: string, role: string, doctorOptions?: DoctorOptions) => Promise<{ error?: string }>;
   logout: () => void;
 }
 
@@ -30,15 +35,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simple password check - in production use bcrypt
     const { data, error } = await supabase
       .from("users")
       .select("*")
       .eq("email", email.toLowerCase())
       .single();
     if (error || !data) return { error: "Invalid email or password" };
-    // For demo: password_hash must match or be 'demo_hash'
-    if (data.password_hash !== password && data.password_hash !== "demo_hash") {
+    if (data.password_hash !== password) {
       return { error: "Invalid email or password" };
     }
     setUser(data);
@@ -46,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return {};
   };
 
-  const register = async (name: string, email: string, password: string, role: string) => {
+  const register = async (name: string, email: string, password: string, role: string, doctorOptions?: DoctorOptions) => {
     const { data: existing } = await supabase.from("users").select("user_id").eq("email", email.toLowerCase()).single();
     if (existing) return { error: "Email already registered" };
     const { data, error } = await supabase
@@ -56,7 +59,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .single();
     if (error || !data) return { error: error?.message || "Registration failed" };
     if (role === "doctor") {
-      await supabase.from("staff").insert({ doctor_id: data.user_id });
+      await supabase.from("staff").insert({
+        doctor_id: data.user_id,
+        specialization: doctorOptions?.specialization || "General Medicine",
+        shift_hours: doctorOptions?.shiftHours || 8,
+        patients_handled_today: 0,
+        is_available: true,
+      });
     }
     setUser(data);
     localStorage.setItem("hospital_user", JSON.stringify(data));

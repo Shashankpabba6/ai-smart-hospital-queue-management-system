@@ -147,21 +147,29 @@ export function predictNoShow(appointment: {
 }
 
 // ─── Peak Hour Prediction ─────────────────────────────────────────────────────
-export function getPeakHourData(): { hour: string; load: number }[] {
-  return [
-    { hour: "8 AM", load: 45 },
-    { hour: "9 AM", load: 72 },
-    { hour: "10 AM", load: 88 },
-    { hour: "11 AM", load: 95 },
-    { hour: "12 PM", load: 70 },
-    { hour: "1 PM", load: 55 },
-    { hour: "2 PM", load: 60 },
-    { hour: "3 PM", load: 78 },
-    { hour: "4 PM", load: 82 },
-    { hour: "5 PM", load: 65 },
-    { hour: "6 PM", load: 40 },
-    { hour: "7 PM", load: 30 },
-  ];
+const HOURS = ["8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM", "6 PM", "7 PM"];
+const HOUR_MAP: Record<number, number> = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 6, 15: 7, 16: 8, 17: 9, 18: 10, 19: 11 };
+
+export function getPeakHourData(appointments?: { created_at: string }[]): { hour: string; load: number }[] {
+  if (!appointments || appointments.length === 0) {
+    return HOURS.map(h => ({ hour: h, load: 0 }));
+  }
+
+  const counts = new Array(12).fill(0);
+  const today = new Date().toISOString().slice(0, 10);
+
+  for (const appt of appointments) {
+    const date = new Date(appt.created_at);
+    if (date.toISOString().slice(0, 10) !== today) continue;
+    const h = date.getHours();
+    if (h >= 8 && h <= 19) counts[HOUR_MAP[h]]++;
+  }
+
+  const maxCount = Math.max(...counts, 1);
+  return HOURS.map((hour, i) => ({
+    hour,
+    load: Math.round((counts[i] / maxCount) * 100),
+  }));
 }
 
 export function getSeverityBadge(score: number): { label: string; bg: string; text: string } {

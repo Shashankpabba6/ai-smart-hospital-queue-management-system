@@ -38,16 +38,6 @@ export default function LoginPage() {
     }
   };
 
-  const fillDemo = (role: "patient" | "doctor" | "admin") => {
-    const creds: Record<string, [string, string]> = {
-      patient: ["patient@hospital.com", "demo_hash"],
-      doctor: ["doctor@hospital.com", "demo_hash"],
-      admin: ["admin@hospital.com", "demo_hash"],
-    };
-    setEmail(creds[role][0]);
-    setPassword(creds[role][1]);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-cyan-950 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -66,19 +56,6 @@ export default function LoginPage() {
             <CardDescription className="text-blue-300">Access your hospital portal</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Demo quick-fill */}
-            <div className="mb-6">
-              <p className="text-xs text-blue-400 mb-2 font-medium uppercase tracking-wide">Quick Demo Login</p>
-              <div className="flex gap-2">
-                {(["patient", "doctor", "admin"] as const).map((r) => (
-                  <button key={r} onClick={() => fillDemo(r)}
-                    className="flex-1 py-1.5 text-xs rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/10 capitalize transition-colors">
-                    {r}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-blue-200">Email</Label>

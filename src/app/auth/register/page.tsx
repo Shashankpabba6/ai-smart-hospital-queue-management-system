@@ -4,7 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { HeartPulse, Eye, EyeOff, UserPlus } from "lucide-react";
+import { HeartPulse, Eye, EyeOff, UserPlus, Stethoscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,24 @@ const ROLES = [
   { value: "admin", label: "Admin", desc: "Hospital resource management" },
 ];
 
+const SPECIALIZATIONS = [
+  "General Medicine",
+  "Cardiology",
+  "Dermatology",
+  "ENT (Ear, Nose & Throat)",
+  "Gastroenterology",
+  "Neurology",
+  "Oncology",
+  "Ophthalmology",
+  "Orthopedics",
+  "Pediatrics",
+  "Psychiatry",
+  "Pulmonology",
+  "Radiology",
+  "Surgery",
+  "Urology",
+];
+
 export default function RegisterPage() {
   const { register } = useAuth();
   const router = useRouter();
@@ -23,6 +41,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("patient");
+  const [specialization, setSpecialization] = useState("General Medicine");
+  const [shiftHours, setShiftHours] = useState("8");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +50,8 @@ export default function RegisterPage() {
     e.preventDefault();
     if (password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
     setLoading(true);
-    const { error } = await register(name, email, password, role);
+    const doctorOptions = role === "doctor" ? { specialization, shiftHours: parseInt(shiftHours) || 8 } : undefined;
+    const { error } = await register(name, email, password, role, doctorOptions);
     setLoading(false);
     if (error) {
       toast.error(error);
@@ -80,7 +101,7 @@ export default function RegisterPage() {
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-blue-200">Full Name</Label>
                 <Input id="name" value={name} onChange={(e) => setName(e.target.value)}
-                  placeholder="Dr. Jane Smith" required
+                  placeholder={role === "doctor" ? "Dr. Jane Smith" : "John Doe"} required
                   className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-cyan-400" />
               </div>
               <div className="space-y-2">
@@ -101,6 +122,29 @@ export default function RegisterPage() {
                   </button>
                 </div>
               </div>
+
+              {role === "doctor" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="specialization" className="text-blue-200 flex items-center gap-1.5">
+                      <Stethoscope className="w-3.5 h-3.5 text-cyan-400" /> Specialization
+                    </Label>
+                    <select id="specialization" value={specialization} onChange={(e) => setSpecialization(e.target.value)}
+                      className="w-full h-10 rounded-md border bg-white/10 border-white/20 text-white px-3 py-2 text-sm focus:border-cyan-400 focus:outline-none">
+                      {SPECIALIZATIONS.map((s) => (
+                        <option key={s} value={s} className="bg-slate-900 text-white">{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="shiftHours" className="text-blue-200">Shift Duration (hours)</Label>
+                    <Input id="shiftHours" type="number" min="4" max="16" value={shiftHours}
+                      onChange={(e) => setShiftHours(e.target.value)} placeholder="8"
+                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 focus:border-cyan-400" />
+                  </div>
+                </>
+              )}
+
               <Button type="submit" disabled={loading}
                 className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white border-0 gap-2">
                 {loading ? "Creating account..." : <><UserPlus className="w-4 h-4" /> Create Account</>}

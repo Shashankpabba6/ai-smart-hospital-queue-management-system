@@ -78,8 +78,7 @@ export default function AdminDashboard() {
     fetchData();
   };
 
-  // Charts data
-  const peakData = getPeakHourData();
+  const peakData = getPeakHourData(appointments);
   const severityDist = [1, 2, 3, 4, 5].map(s => ({
     name: ["", "Minimal", "Mild", "Moderate", "Severe", "Critical"][s],
     value: appointments.filter(a => a.severity_score === s).length,
