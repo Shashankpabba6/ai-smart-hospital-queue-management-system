@@ -1,3 +1,53 @@
+# AI Smart Hospital Queue Management System
+
+A full-stack hospital queue management system designed to improve patient flow
+and help doctors manage their queues efficiently.
+
+## Overview
+
+The system manages the complete patient-to-doctor workflow, from patient
+registration and appointment booking to token generation and queue management.
+
+Patients can receive tokens based on their priority, while doctors can view
+and manage their queues through a dedicated dashboard. Administrators can
+manage users and the overall system.
+
+## Key Features
+
+- Patient registration and appointment booking
+- Token generation and queue management
+- Patient prioritization based on severity
+- Doctor queue management
+- Separate patient, doctor, and admin dashboards
+- Real-time queue status updates
+- Secure authentication and role-based access
+
+## Tech Stack
+
+- Next.js
+- TypeScript
+- React
+- Supabase
+- Tailwind CSS
+
+## How It Works
+
+1. Patient registers and books an appointment.
+2. The system generates a token and assigns a priority.
+3. Patients are organized in the doctor's queue based on priority.
+4. Doctors can view and manage their current queue.
+5. Administrators can manage users and system operations.
+
+## Project Structure
+
+The project is organized into separate components for authentication,
+patient management, doctor workflows, queue management, and administration.
+
+## Getting Started
+
+```bash
+npm install
+npm run dev
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
