@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { requireUser, supabaseAdmin as supabase } from "@/lib/server-auth";
 
 export async function GET(req: NextRequest) {
   try {
+    const auth = await requireUser(req, ["admin"]);
+    if ("denied" in auth) return auth.denied;
+
     // Get all doctors
     const { data: doctors, error: usersError } = await supabase
       .from("users")
-      .select("user_id, name, email, password_hash, role, created_at")
+      .select("user_id, name, email, role, created_at")
       .eq("role", "doctor")
       .order("created_at", { ascending: true });
 
@@ -50,7 +48,6 @@ export async function GET(req: NextRequest) {
       return {
         name: doctor.name,
         email: doctor.email,
-        password: doctor.password_hash,
         user_id: doctor.user_id,
         created_at: doctor.created_at,
         has_staff_entry: !!staff,

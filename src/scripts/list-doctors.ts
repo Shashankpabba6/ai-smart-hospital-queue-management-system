@@ -14,7 +14,7 @@ async function listDoctors() {
   // Get all users with doctor role
   const { data: doctors, error: usersError } = await supabase
     .from("users")
-    .select("user_id, name, email, password_hash, role, created_at")
+    .select("user_id, name, email, role, created_at")
     .eq("role", "doctor")
     .order("created_at", { ascending: true });
 
@@ -51,7 +51,6 @@ async function listDoctors() {
 
     console.log(`\n${index + 1}. Doctor: ${doctor.name}`);
     console.log(`   Email: ${doctor.email}`);
-    console.log(`   Password: ${doctor.password_hash} (stored as-is in database)`);
     console.log(`   User ID: ${doctor.user_id}`);
     console.log(`   Created: ${new Date(doctor.created_at).toLocaleString()}`);
     

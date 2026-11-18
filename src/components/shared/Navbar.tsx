@@ -29,8 +29,8 @@ export function Navbar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push("/");
   };
 

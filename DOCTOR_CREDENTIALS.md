@@ -1,13 +1,12 @@
-# Doctor Credentials & Testing Guide
+# Doctor Accounts & Testing Guide
 
-## How to View All Doctors and Their Credentials
+## How to View All Doctors
 
 ### Option 1: Via Admin Dashboard (Easiest)
 1. Login as **Admin** (or register an admin account)
 2. Go to: **http://localhost:3000/admin/doctors**
 3. You'll see all doctors with:
    - Email addresses
-   - Passwords (as stored in database)
    - Specialization
    - Availability status
    - Appointment counts
@@ -15,10 +14,10 @@
 ### Option 2: Via API Endpoint
 ```bash
 # In browser or Postman:
-GET http://localhost:3000/api/list-doctors
+GET http://localhost:3000/api/list-doctors   # admins only: send Authorization: Bearer <access token>
 
 # Or using curl:
-curl http://localhost:3000/api/list-doctors
+curl -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:3000/api/list-doctors
 ```
 
 ### Option 3: Using Script (Requires Node.js)
@@ -63,7 +62,7 @@ This will:
 
 ### Step 1: Verify Doctor Exists
 1. Login as Admin → Go to `/admin/doctors`
-2. Note down a doctor's email and password
+2. Note down a doctor's email (passwords are hashed by Supabase Auth and cannot be viewed)
 3. Verify the doctor has:
    - ✅ Staff entry (green badge)
    - ✅ Available status (blue badge)
@@ -78,7 +77,7 @@ This will:
 
 ### Step 3: Verify Doctor Sees Patient
 1. **Logout** from patient account
-2. **Login as the doctor** (using email/password from Step 1)
+2. **Login as the doctor** (using the email from Step 1 and the password chosen at registration)
 3. Go to `/doctor/dashboard`
 4. **Verify**: Patient appears in queue with:
    - Patient name
@@ -119,10 +118,9 @@ This will:
 ## Database Schema Reference
 
 ### `users` table
-- `user_id` (UUID, primary key)
+- `user_id` (UUID, primary key, = `auth.users.id`)
 - `name` (text)
 - `email` (text, unique)
-- `password_hash` (text - stored as plain text in this demo)
 - `role` (text: "patient" | "doctor" | "admin")
 - `created_at` (timestamp)
 
@@ -153,7 +151,7 @@ This will:
 npm run dev
 
 # View doctors (via API)
-curl http://localhost:3000/api/list-doctors | jq
+curl -H "Authorization: Bearer $ACCESS_TOKEN" http://localhost:3000/api/list-doctors | jq
 
 # List doctors (via script)
 npx tsx src/scripts/list-doctors.ts
@@ -166,7 +164,7 @@ npx tsx src/scripts/fix-doctors.ts
 
 ## Notes
 
-- **Passwords**: Currently stored as plain text in `password_hash` column (demo mode)
+- **Passwords**: Handled by Supabase Auth and stored only as bcrypt hashes in `auth.users`; they are never returned by the app or its API
 - **Email Notifications**: Require `RESEND_API_KEY` in `.env.local` (optional)
 - **Doctor Availability**: Only doctors with `is_available = true` are prioritized in booking list
 - **All Doctors Visible**: The booking page now shows ALL doctors, regardless of staff entry status

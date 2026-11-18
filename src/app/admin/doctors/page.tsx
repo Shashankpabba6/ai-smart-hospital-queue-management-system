@@ -6,13 +6,13 @@ import { Navbar } from "@/components/shared/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Mail, User, Stethoscope, AlertTriangle, CheckCircle } from "lucide-react";
+import { RefreshCw, Mail, Stethoscope, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 interface DoctorInfo {
   name: string;
   email: string;
-  password: string;
   user_id: string;
   created_at: string;
   has_staff_entry: boolean;
@@ -36,13 +36,20 @@ export default function DoctorsListPage() {
       router.push("/auth/login");
       return;
     }
+    if (user.role !== "admin") {
+      router.push(user.role === "doctor" ? "/doctor/dashboard" : "/patient/dashboard");
+      return;
+    }
     fetchDoctors();
   }, [user, loading, router]);
 
   const fetchDoctors = async () => {
     setFetching(true);
     try {
-      const res = await fetch("/api/list-doctors");
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("/api/list-doctors", {
+        headers: { Authorization: `Bearer ${session?.access_token ?? ""}` },
+      });
       const data = await res.json();
       if (data.error) {
         toast.error(data.error);
@@ -141,10 +148,6 @@ export default function DoctorsListPage() {
                           <Mail className="w-4 h-4" />
                           <span className="font-mono">{doctor.email}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-blue-300">
-                          <User className="w-4 h-4" />
-                          <span>Password: <span className="font-mono bg-white/10 px-2 py-0.5 rounded">{doctor.password}</span></span>
-                        </div>
                         {doctor.has_staff_entry && (
                           <div className="flex items-center gap-2 text-blue-300">
                             <Stethoscope className="w-4 h-4" />
@@ -163,11 +166,11 @@ export default function DoctorsListPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          navigator.clipboard.writeText(`${doctor.email}\nPassword: ${doctor.password}`);
-                          toast.success("Credentials copied to clipboard");
+                          navigator.clipboard.writeText(doctor.email);
+                          toast.success("Email copied to clipboard");
                         }}
                         className="border-white/20 text-white hover:bg-white/10">
-                        Copy Credentials
+                        Copy Email
                       </Button>
                     </div>
                   </div>
