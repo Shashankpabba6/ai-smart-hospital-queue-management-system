@@ -47,9 +47,12 @@ patient management, doctor workflows, queue management, and administration.
 
 1. Create a Supabase project and copy `.env.example` to `.env.local` with your project URL
    (`https://<ref>.supabase.co`, no `/rest/v1`), publishable key and secret key.
-2. In the Supabase **SQL Editor**, run `supabase/schema.sql`, then `supabase/002_supabase_auth.sql`.
+2. In the Supabase **SQL Editor**, run `supabase/schema.sql`, then `supabase/002_supabase_auth.sql`,
+   then `supabase/003_block_admin_signup.sql`.
 3. Login uses **Supabase Auth**: passwords are stored only as bcrypt hashes. For local testing you can turn off
    *Authentication → Sign In / Providers → Email → Confirm email*; otherwise new users confirm via email first.
+4. Sign-up only creates patients and doctors. To make an admin, register normally, then run in the SQL Editor:
+   `update public.users set role = 'admin' where email = 'you@example.com';`
 
 ## Getting Started
 
