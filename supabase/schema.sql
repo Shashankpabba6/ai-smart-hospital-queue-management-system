@@ -98,5 +98,10 @@ begin
   end loop;
 end $$;
 
+-- server-side code (API routes, scripts) uses the secret key = service_role.
+-- Newer Supabase projects do not grant it access to new tables automatically.
+grant select, insert, update, delete on public.users, public.staff,
+      public.appointments, public.resources to service_role;
+
 -- Make the new tables visible to the API immediately
 notify pgrst, 'reload schema';
