@@ -3,7 +3,7 @@
 ## How to View All Doctors
 
 ### Option 1: Via Admin Dashboard (Easiest)
-1. Login as **Admin** (or register an admin account)
+1. Login as **Admin** (admins are created in Supabase: `update public.users set role = 'admin' where email = '...';`)
 2. Go to: **http://localhost:3000/admin/doctors**
 3. You'll see all doctors with:
    - Email addresses

@@ -2,7 +2,7 @@
 -- AI Smart Hospital Queue Management System - database schema
 -- Run once in Supabase: Dashboard > SQL Editor > New query > paste > Run
 -- Safe to re-run (uses IF NOT EXISTS / ON CONFLICT).
--- Then run 002_supabase_auth.sql (moves login to Supabase Auth, removes password_hash).
+-- Then run 002_supabase_auth.sql (Supabase Auth) and 003_block_admin_signup.sql.
 -- Rebuilt from the app code (src/lib/supabase.ts and all queries).
 -- ============================================================
 

@@ -13,7 +13,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 const ROLES = [
   { value: "patient", label: "Patient", desc: "Book appointments & track queue" },
   { value: "doctor", label: "Doctor", desc: "Manage patient consultations" },
-  { value: "admin", label: "Admin", desc: "Hospital resource management" },
 ];
 
 const SPECIALIZATIONS = [
@@ -60,9 +59,7 @@ export default function RegisterPage() {
       router.push("/auth/login");
     } else {
       toast.success("Account created! Welcome to MediQueue AI.");
-      if (role === "patient") router.push("/patient/dashboard");
-      else if (role === "doctor") router.push("/doctor/dashboard");
-      else router.push("/admin/dashboard");
+      router.push(role === "doctor" ? "/doctor/dashboard" : "/patient/dashboard");
     }
   };
 
@@ -87,7 +84,7 @@ export default function RegisterPage() {
             {/* Role selector */}
             <div className="mb-6">
               <Label className="text-blue-200 mb-3 block">Select Your Role</Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {ROLES.map((r) => (
                   <button key={r.value} type="button" onClick={() => setRole(r.value)}
                     className={`p-3 rounded-xl border text-center transition-all ${role === r.value
@@ -98,6 +95,7 @@ export default function RegisterPage() {
                   </button>
                 ))}
               </div>
+              <p className="text-xs text-blue-400 mt-2">Admin accounts are set up by the hospital administrator.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
