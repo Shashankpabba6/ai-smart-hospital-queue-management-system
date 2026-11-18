@@ -43,6 +43,14 @@ manage users and the overall system.
 The project is organized into separate components for authentication,
 patient management, doctor workflows, queue management, and administration.
 
+## Database setup (Supabase)
+
+1. Create a Supabase project and copy `.env.example` to `.env.local` with your project URL
+   (`https://<ref>.supabase.co`, no `/rest/v1`), publishable key and secret key.
+2. In the Supabase **SQL Editor**, run `supabase/schema.sql`, then `supabase/002_supabase_auth.sql`.
+3. Login uses **Supabase Auth**: passwords are stored only as bcrypt hashes. For local testing you can turn off
+   *Authentication → Sign In / Providers → Email → Confirm email*; otherwise new users confirm via email first.
+
 ## Getting Started
 
 ```bash

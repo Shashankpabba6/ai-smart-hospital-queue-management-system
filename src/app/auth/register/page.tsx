@@ -51,10 +51,13 @@ export default function RegisterPage() {
     if (password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
     setLoading(true);
     const doctorOptions = role === "doctor" ? { specialization, shiftHours: parseInt(shiftHours) || 8 } : undefined;
-    const { error } = await register(name, email, password, role, doctorOptions);
+    const { error, needsConfirmation } = await register(name, email, password, role, doctorOptions);
     setLoading(false);
     if (error) {
       toast.error(error);
+    } else if (needsConfirmation) {
+      toast.success("Account created! Check your email to confirm it, then log in.");
+      router.push("/auth/login");
     } else {
       toast.success("Account created! Welcome to MediQueue AI.");
       if (role === "patient") router.push("/patient/dashboard");

@@ -21,20 +21,15 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await login(email, password);
+    const { error, role } = await login(email, password);
     setLoading(false);
     if (error) {
       toast.error(error);
     } else {
       toast.success("Welcome back!");
-      // AuthProvider redirects on user change via home page
-      const stored = localStorage.getItem("hospital_user");
-      if (stored) {
-        const u = JSON.parse(stored);
-        if (u.role === "patient") router.push("/patient/dashboard");
-        else if (u.role === "doctor") router.push("/doctor/dashboard");
-        else router.push("/admin/dashboard");
-      }
+      if (role === "patient") router.push("/patient/dashboard");
+      else if (role === "doctor") router.push("/doctor/dashboard");
+      else router.push("/admin/dashboard");
     }
   };
 
